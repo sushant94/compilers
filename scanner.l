@@ -1,12 +1,25 @@
+%option noyywrap
+/* Documentation for the scanner.
+ * 
+ * LEGEND:
+ * -------
+ * 
+ *  
+ */
+
 D [0-9]
 a [a-z]
 A [A-Z]
 IDENT [a-zA-Z_]+[a-zA-Z_0-9]*
 PUNCTUATOR [\[\]\(\)\{\}\.(\->)(++)(\-\-)&*+\-~!/%(<<)(>>)<>(<=)(>=)(==)(!=)\^\|(&&)(\|\|);,#]
-KEYWORD (auto)|(break)|(case)|(char)|(const)|(continue)|(default)|(do)|(double)|(else)|(enum)|(extern)|(float)|(for)|(goto)|(if)|(inline)|(int)|(long)|(register)|(restrict)|(return)|(short)|(signed)|(sizeof)|(static)|(struct)|(switch)|(typedef)|(union)|(unsigned)|(void)|(volatile)|(while)|(_Bool)|(_Complex)|(_Imaginary)
+KEYWORD "auto"|"break"|"case"|"const"|"continue"|"default"|"enum"|"extern"|"goto"|"inline"|"long"|"register"|"restrict"|"return"|"short"|"signed"|"sizeof"|"static"|"struct"|"switch"|"typedef"|"union"|"unsigned"|"volatile"|"_Bool"|"_Complex"|"_Imaginary"
+BINOP [-+*/&\|^]|"<="|">="|"=="|"&&"|"||"|"!="
+ASSGN "="|"+="|"-="|"*="|"/="
+TYPE (int)|(char)|(float)|(double)|(void)
 %x STRING
 %x COMMENT
 %{
+#include "y.tab.h"
 
 char* subs(char *s, int n)
 {
@@ -19,32 +32,38 @@ char* subs(char *s, int n)
 %}
 
 %%
-["]                   { BEGIN STRING; yymore(); }
 
+
+"/*"                  { BEGIN COMMENT; } /* Comment section */
+"//".*                ;
+<COMMENT>"\n"         ;
+<COMMENT>[^(*/)]*     ;
+<COMMENT>.*"\n"       { BEGIN INITIAL; }
+
+["]                   { BEGIN STRING; yymore(); } /* String section */
 <STRING>\"            { 
-                          printf("<%s, LITERAL>\n", yytext);
                           BEGIN INITIAL;
+                          return LIT;
                       }
 <STRING>[^"]          { yymore(); }
 <STRING>"\\\""        { yymore(); }
 
-<COMMENT>"\n"         ;
-<COMMENT>[^(*/)]*$    ;
-<COMMENT>.*"\n"       { BEGIN INITIAL; }
 
-"/*"                  { BEGIN COMMENT; }
-"//".*                ;
-^[ ]*                 ;
-{KEYWORD}[ ]          { printf("<%s, KEYWORD>\n", subs(yytext, yyleng-1)); }
-{PUNCTUATOR}          { printf("<%s, PUNCTUATOR> \n", yytext); }
-{IDENT}               { printf("<%s, IDENTIFIER> \n", yytext); }
-{D}*                  { printf("<%s, LITERAL> \n", yytext); }
+"if"                  { return IF; }
+"else"                { return ELSE; }
+"while"               { return WHILE; }
+"for"                 { return FOR; }
+"do"                  { return DO; }
+
+{KEYWORD}             { return KEY; }
+{BINOP}               { return OP; }
+{TYPE}                { return TYPE; }
+{IDENT}               { return ID; }
+{D}+"."{D}+           { return LIT; }
+{D}+                  { return LIT; }
 \n                    ;
+"#".*                 ;
+" "                   ;
+{ASSGN}               { return ASSGN; }
+.                     { return *yytext; }
 %%
-
-int main()
-{
-    yylex();
-    return 0;
-}
-
