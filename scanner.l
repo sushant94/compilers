@@ -20,7 +20,8 @@ TYPE (int)|(char)|(float)|(double)|(void)
 %x COMMENT
 %{
 #include "y.tab.h"
-
+#include "symbol.h"
+#include <string.h>
 char* subs(char *s, int n)
 {
     char *s1;
@@ -57,8 +58,19 @@ char* subs(char *s, int n)
 
 {KEYWORD}             { return KEY; }
 {BINOP}               { return OP; }
-{TYPE}                { return TYPE; }
-{IDENT}               { return ID; }
+
+{TYPE}                { 
+                        yylval.dtype = createDataType(yytext);
+                        return TYPE; 
+                      }
+
+{IDENT}               { 
+                        yylval.e = malloc(sizeof(Entry));
+                        strncpy (yylval.e->key, yytext, sizeof(yylval.e->key));
+                        yylval.e->exists = 1;
+                        yylval.e->next = NULL;
+                        return ID;
+                      }
 {D}+"."{D}+           { return LIT; }
 {D}+                  { return LIT; }
 \n                    ;
