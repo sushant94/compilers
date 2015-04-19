@@ -95,7 +95,7 @@ loop: FOR '(' assgn ';' expr ';' assgn ')' '{' stmts '}'
     | DO '{' stmts '}' WHILE '(' expr ')' ';'
     ;
 
-fcall: ID '(' aparams ')'
+fcall: ID '(' aparams ')' { if (!checkCall(&t, $1->key)) yyerror("Wrong number or type of arguments for function call"); }
      ;
 
 params: param ',' params
@@ -108,7 +108,7 @@ param: ID { insertIdent($1->key, -1, 0); }
 aparams: aparam ',' aparams
       | aparam
       ;
-aparam: ID
+aparam: ID { pushToStack(&t, $1->type); }
      | LIT
      | ID '[' LIT ']'
      ;
@@ -116,9 +116,9 @@ aparam: ID
 fparams: fparam ',' fparams
        | fparam
        ;
-fparam: TYPE ID '[' LIT ']' { insertIdent($2->key, $1, 0); }
-      | TYPE ID '[' ']'     { insertIdent($2->key, $1, 0); }
-      | TYPE ID             { insertIdent($2->key, $1, 0); }
+fparam: TYPE ID '[' LIT ']' { pushToStack(&t, $1); insertIdent($2->key, $1, 0); }
+      | TYPE ID '[' ']'     { pushToStack(&t, $1); insertIdent($2->key, $1, 0); }
+      | TYPE ID             { pushToStack(&t, $1); insertIdent($2->key, $1, 0); }
       ;
 
 
